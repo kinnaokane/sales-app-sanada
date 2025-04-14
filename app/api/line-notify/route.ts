@@ -5,9 +5,11 @@ export async function POST(req: Request) {
     const body = await req.json()
     const message = body.message
 
+    console.log("📨 LINE ROUTE に入りました:", message)
+
     const LINE_API_URL = "https://api.line.me/v2/bot/message/broadcast"
     const ACCESS_TOKEN =
-      "R8XNKe39GCH+o0kp5xgXRuAWhY7usM3Xw0lYt5FJRlQv1FZar4nQwwWUnGuV63hHQDFFnmmU7h7hoVNVrTjO4s9A9cOeicnVe4IntNpJk2SzrqszCzUIC83O9XcpH7VH9GnRBofCwK8A6FM6Ovb/pwdB04t89/1O/w1cDnyilFU="
+      "V9BGBNaS0rWv3MqH/R3PIXsFFESkAWTikpIwnjVWKsfgPwwyaZruJKNMmkFH2rJ9f4TYJCXOi1vQ8nii4lbjgo6pGp+HgycmJOLonF1VvOzkTIA/Td65vzjxdlmwDqyTUWwhQ9fquFwh+ivXl6U9UQdB04t89/1O/w1cDnyilFU="
 
     const res = await fetch(LINE_API_URL, {
       method: "POST",
@@ -26,11 +28,14 @@ export async function POST(req: Request) {
     })
 
     if (!res.ok) {
+      const text = await res.text()
+      console.error("🛑 LINE APIからのエラー:", text)
       return Response.json({ success: false, message: "LINE送信失敗" }, { status: res.status })
     }
 
     return Response.json({ success: true, message: "LINE通知成功 ✅" }, { status: 200 })
   } catch (err) {
+    console.error("🔥 routeエラー", err)
     return Response.json({ success: false, message: "LINE通知でサーバーエラー ❌" }, { status: 500 })
   }
 }
