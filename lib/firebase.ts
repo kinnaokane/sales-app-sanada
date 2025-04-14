@@ -1,18 +1,73 @@
-import { initializeApp, getApps, getApp } from "firebase/app"
-import { getFirestore } from "firebase/firestore"
+// プレビュー環境用の完全なモック実装
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD-o0Ap4sLrupx_zsBPT4mCPlLcbgGmL5M",
-  authDomain: "sanada-sale-app.firebaseapp.com",
-  projectId: "sanada-sale-app",
-  storageBucket: "sanada-sale-app.appspot.com",
-  messagingSenderId: "178806304798",
-  appId: "1:178806304798:web:8c912144e3204ed3567e0f",
-  measurementId: "G-DYPC7HL5L9",
+// Firestoreが利用可能かどうかのフラグ - プレビュー環境では常にfalse
+export const isFirestoreAvailable = false
+
+// モックデータを生成する関数
+const createMockDoc = (data = {}) => ({
+  id: `mock-${Date.now()}`,
+  data: () => data,
+  exists: true,
+})
+
+// Firestoreのモックオブジェクト
+const mockFirestore = {
+  collection: () => ({
+    add: async (data: any) => createMockDoc(data),
+    doc: (id: string) => ({
+      get: async () => createMockDoc(),
+      set: async (data: any) => {},
+      update: async (data: any) => {},
+      delete: async () => {},
+    }),
+  }),
+  doc: (path: string) => ({
+    get: async () => createMockDoc(),
+    set: async (data: any) => {},
+    update: async (data: any) => {},
+    delete: async () => {},
+  }),
 }
 
-// ✅ すでに初期化されていた場合は reuse（VercelのSSR環境などで安全）
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+// モックのFirestoreインスタンス
+export const db = mockFirestore
 
-export const db = getFirestore(app)
-export const isFirestoreAvailable = true
+// モックのコレクション関数
+export const getCollection = (collectionName: string) => {
+  console.log(`モックコレクション "${collectionName}" を使用します`)
+  return {
+    // モックのコレクションオブジェクト
+    type: "collection",
+    path: collectionName,
+    // 他の必要なプロパティやメソッド
+  }
+}
+
+// モックのクエリ関数
+export const createQuery = (collectionRef: any, ...queryConstraints: any[]) => {
+  console.log("モッククエリを使用します")
+  return collectionRef
+}
+
+// モックのドキュメント追加関数
+export const addDocument = async (collectionRef: any, data: any) => {
+  console.log("モックaddDocを使用します", data)
+  return { id: `mock-${Date.now()}` }
+}
+
+// モックのドキュメント取得関数
+export const getDocuments = async (queryRef: any) => {
+  console.log("モックgetDocsを使用します")
+  return {
+    docs: [],
+    empty: true,
+    size: 0,
+    forEach: () => {},
+  }
+}
+
+// モックのorderBy関数
+export const orderByField = (field: string, direction: "asc" | "desc" = "asc") => {
+  console.log(`モックorderBy: ${field} ${direction}`)
+  return { type: "orderBy", field, direction }
+}

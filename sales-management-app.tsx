@@ -634,12 +634,17 @@ export default function SalesManagementApp() {
       // Promiseを使用して処理
       const pdfBlob = await new Promise<Blob>((resolve, reject) => {
         if (typeof window !== "undefined") {
-          html2pdf()
-            .set(opt)
-            .from(tempDiv)
-            .outputPdf("blob")
-            .then((blob: Blob) => resolve(blob))
-            .catch((error: any) => reject(error))
+          import("html2pdf.js")
+            .then((module) => {
+              const html2pdf = module.default
+              html2pdf()
+                .set(opt)
+                .from(tempDiv)
+                .outputPdf("blob")
+                .then((blob: Blob) => resolve(blob))
+                .catch((error: any) => reject(error))
+            })
+            .catch((err) => reject(err))
         }
       })
 
@@ -1974,7 +1979,7 @@ export default function SalesManagementApp() {
                                   編集
                                 </Button>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                                  \ 削除
+                                  削除
                                 </Button>
                               </div>
                             )}
