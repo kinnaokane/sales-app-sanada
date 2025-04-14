@@ -907,6 +907,8 @@ export default function SalesManagementApp() {
 
   // 保存ハンドラー
   const handleSave = async () => {
+    console.log("✅ handleSave() 実行中 — 保存処理スタート")
+
     // 記入者名が選択されていない場合は警告
     if (!recorder) {
       toast({
