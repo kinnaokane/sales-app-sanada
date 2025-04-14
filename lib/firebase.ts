@@ -1,73 +1,59 @@
-// プレビュー環境用の完全なモック実装
+// lib/firebase.ts
 
-// Firestoreが利用可能かどうかのフラグ - プレビュー環境では常にfalse
-export const isFirestoreAvailable = false
+import { initializeApp, getApps, getApp } from "firebase/app"
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  type QueryConstraint,
+  type DocumentData,
+  type QuerySnapshot,
+} from "firebase/firestore"
 
-// モックデータを生成する関数
-const createMockDoc = (data = {}) => ({
-  id: `mock-${Date.now()}`,
-  data: () => data,
-  exists: true,
-})
-
-// Firestoreのモックオブジェクト
-const mockFirestore = {
-  collection: () => ({
-    add: async (data: any) => createMockDoc(data),
-    doc: (id: string) => ({
-      get: async () => createMockDoc(),
-      set: async (data: any) => {},
-      update: async (data: any) => {},
-      delete: async () => {},
-    }),
-  }),
-  doc: (path: string) => ({
-    get: async () => createMockDoc(),
-    set: async (data: any) => {},
-    update: async (data: any) => {},
-    delete: async () => {},
-  }),
+// Firebaseの設定（変更不要）
+const firebaseConfig = {
+  apiKey: "AIzaSyD-o0Ap4sLrupx_zsBPT4mCPlLcbgGmL5M",
+  authDomain: "sanada-sale-app.firebaseapp.com",
+  projectId: "sanada-sale-app",
+  storageBucket: "sanada-sale-app.appspot.com",
+  messagingSenderId: "178806304798",
+  appId: "1:178806304798:web:8c912144e3204ed3567e0f",
+  measurementId: "G-DYPC7HL5L9"
 }
 
-// モックのFirestoreインスタンス
-export const db = mockFirestore
+// Firebase初期化（複数回防止）
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
-// モックのコレクション関数
+// Firestoreインスタンスを取得
+export const db = getFirestore(app)
+
+// クラウド同期フラグ
+export const isFirestoreAvailable = true
+
+// Firestoreのコレクション取得
 export const getCollection = (collectionName: string) => {
-  console.log(`モックコレクション "${collectionName}" を使用します`)
-  return {
-    // モックのコレクションオブジェクト
-    type: "collection",
-    path: collectionName,
-    // 他の必要なプロパティやメソッド
-  }
+  return collection(db, collectionName)
 }
 
-// モックのクエリ関数
-export const createQuery = (collectionRef: any, ...queryConstraints: any[]) => {
-  console.log("モッククエリを使用します")
-  return collectionRef
+// クエリの作成
+export const createQuery = (collectionRef: any, ...queryConstraints: QueryConstraint[]) => {
+  return query(collectionRef, ...queryConstraints)
 }
 
-// モックのドキュメント追加関数
+// ドキュメント追加
 export const addDocument = async (collectionRef: any, data: any) => {
-  console.log("モックaddDocを使用します", data)
-  return { id: `mock-${Date.now()}` }
+  return await addDoc(collectionRef, data)
 }
 
-// モックのドキュメント取得関数
-export const getDocuments = async (queryRef: any) => {
-  console.log("モックgetDocsを使用します")
-  return {
-    docs: [],
-    empty: true,
-    size: 0,
-    forEach: () => {},
-  }
+// ドキュメント取得
+export const getDocuments = async (queryRef: any): Promise<QuerySnapshot<DocumentData>> => {
+  return await getDocs(queryRef)
 }
 
-// モックのorderBy関数
+// ソート用
 export const orderByField = (field: string, direction: "asc" | "desc" = "asc") => {
-  console.log(`モックorderBy: ${field} ${direction}`)
-  return { type: "orderBy", field, direction }
+  return orderBy(field, direction)
 }
