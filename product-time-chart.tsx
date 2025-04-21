@@ -29,25 +29,19 @@ export default function ProductTimeChart({ data }: ProductTimeChartProps) {
     const ctx = chartRef.current.getContext("2d")
     if (!ctx) return
 
-    // 既存チャートの破棄
+    // もし前のチャートがあれば破棄
     if (chartInstanceRef.current) {
-      try {
-        chartInstanceRef.current.destroy()
-      } catch (e) {
-        console.warn("チャート破棄エラー:", e)
-      }
+      chartInstanceRef.current.destroy()
       chartInstanceRef.current = null
     }
 
-    // データ整形：平均時間の大きい順トップ10
-    const sorted = [...data]
-      .sort((a, b) => b.averageTime - a.averageTime)
-      .slice(0, 10)
+    // データ整形：平均時間が大きい順のトップ10
+    const sorted = [...data].sort((a, b) => b.averageTime - a.averageTime).slice(0, 10)
     const labels = sorted.map((d) => d.name)
     const avgTimes = sorted.map((d) => d.averageTime)
     const totTimes = sorted.map((d) => d.totalTime)
 
-    // 新チャート生成
+    // 新しいチャート生成
     chartInstanceRef.current = new Chart(ctx, {
       type: "bar",
       data: {
@@ -84,18 +78,6 @@ export default function ProductTimeChart({ data }: ProductTimeChartProps) {
             position: "right",
             grid: { drawOnChartArea: false },
             title: { display: true, text: "総作業時間(分)" },
-          },
-        },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const v = ctx.raw as number
-                return ctx.dataset.label === "平均作業時間(分/個)"
-                  ? `平均: ${v.toFixed(1)}分/個`
-                  : `総時間: ${v}分`
-              },
-            },
           },
         },
       },
