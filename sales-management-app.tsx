@@ -61,7 +61,7 @@ interface SalesRecord {
 }
 
 // LINE通知を送信する関数
-const sendLineMessage = async (message: string) => {
+const sendlinemessage = async (message: string) => {
   try {
     const res = await fetch("/api/line-notify", {
       method: "POST",
