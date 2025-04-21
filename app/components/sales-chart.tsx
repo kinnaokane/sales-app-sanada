@@ -1,10 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import dynamic from "next/dynamic"
-
-// Chart.jsをクライアントサイドのみでインポート
-const ChartJS = dynamic(() => import("chart.js/auto"), { ssr: false })
+import React, { useEffect, useRef } from "react"
+import Chart from "chart.js/auto"
 
 interface MonthlyData {
   month: string
@@ -17,101 +14,70 @@ interface SalesChartProps {
 }
 
 export default function SalesChart({ data }: SalesChartProps) {
-  const chartRef = useRef<HTMLCanvasElement>(null)
-  const chartInstanceRef = useRef<any>(null)
-  const [isClient, setIsClient] = useState(false)
-
-  // クライアントサイドでのみ実行されるようにする
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const chartRef = useRef<Chart | null>(null)
 
   useEffect(() => {
-    if (!isClient || !chartRef.current || !data.length) return
+    if (!canvasRef.current || data.length === 0) return
 
-    const ctx = chartRef.current.getContext("2d")
+    const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
 
-    // 以前のチャートを破棄（安全に行う）
-    if (chartInstanceRef.current) {
-      try {
-        chartInstanceRef.current.destroy()
-      } catch (e) {
-        console.warn("チャートの破棄に失敗しました", e)
-      }
-      chartInstanceRef.current = null
-    }
+    // 既存チャートの破棄
+    chartRef.current?.destroy()
 
-    // Format data for chart
-    const months = data.map((item) => {
+    // ラベルとデータを整形
+    const labels = data.map((item) => {
       const [year, month] = item.month.split("-")
       return `${year}年${month}月`
     })
-
     const salesData = data.map((item) => item.sales)
 
-    // 非同期でChart.jsをロード
-    import("chart.js/auto")
-      .then((ChartModule) => {
-        try {
-          // 新しいチャートを作成
-          chartInstanceRef.current = new ChartModule.Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: months,
-              datasets: [
-                {
-                  label: "月間売上",
-                  data: salesData,
-                  backgroundColor: "rgba(59, 130, 246, 0.5)",
-                  borderColor: "rgb(59, 130, 246)",
-                  borderWidth: 1,
-                },
-              ],
+    // 新しいチャート生成
+    chartRef.current = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "月間売上",
+            data: salesData,
+            backgroundColor: "rgba(59, 130, 246, 0.5)",
+            borderColor: "rgb(59, 130, 246)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              // Y軸の目盛りを「xx円」表記に
+              callback: (value) => `${value.toLocaleString()}円`,
             },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: (value) => value.toLocaleString() + "円",
-                  },
-                },
-              },
-              plugins: {
-                tooltip: {
-                  callbacks: {
-                    label: (context) => {
-                      const value = context.raw as number
-                      return `売上: ${value.toLocaleString()}円`
-                    },
-                  },
-                },
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.raw as number
+                return `売上: ${v.toLocaleString()}円`
               },
             },
-          })
-        } catch (err) {
-          console.error("チャートの作成に失敗しました", err)
-        }
-      })
-      .catch((err) => {
-        console.error("Chart.jsのロードに失敗しました", err)
-      })
+          },
+        },
+      },
+    })
 
-    // クリーンアップ関数
     return () => {
-      if (chartInstanceRef.current) {
-        try {
-          chartInstanceRef.current.destroy()
-        } catch (e) {
-          console.warn("クリーンアップ時のチャート破棄に失敗しました", e)
-        }
-        chartInstanceRef.current = null
-      }
+      chartRef.current?.destroy()
+      chartRef.current = null
     }
-  }, [data, isClient])
+  }, [data])
 
-  return <canvas ref={chartRef} />
+  return <canvas ref={canvasRef} />
 }
