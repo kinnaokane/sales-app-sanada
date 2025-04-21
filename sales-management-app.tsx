@@ -60,27 +60,29 @@ interface SalesRecord {
   taxRate: number
 }
 
-// LINE通知を送信する関数
-const sendlinemessage = async (message: string) => {
-  try {
-    const res = await fetch("/api/line-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-    })
+- // LINE通知を送信する関数
+- const sendlinemessage = async (message: string) => {
++ // LINE通知を送信する関数
++ const sendLineMessage = async (message: string): Promise<any> => {
+    try {
+      const res = await fetch("/api/line-notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      })
 
-    if (!res.ok) {
-      const errorText = await res.text()
-      throw new Error(errorText)
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(errorText)
+      }
+
+      const data = await res.json()
+      return data
+    } catch (error) {
+      console.error("LINE通知送信エラー:", error)
+      throw error
     }
-
-    const data = await res.json()
-    return data
-  } catch (error) {
-    console.error("LINE通知送信エラー:", error)
-    throw error
   }
-}
 
 // 商品データの初期値
 const defaultProducts = [
