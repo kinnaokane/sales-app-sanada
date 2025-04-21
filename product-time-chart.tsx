@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import "chart.js/auto" // ✅ これだけでOK！
+import React, { useEffect, useRef, useState } from "react"
+import Chart from "chart.js/auto"
 
 interface ProductTimeData {
   name: string
@@ -16,7 +16,7 @@ interface ProductTimeChartProps {
 
 export default function ProductTimeChart({ data }: ProductTimeChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
-  const chartInstanceRef = useRef<any>(null)
+  const chartInstanceRef = useRef<Chart | null>(null)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -24,99 +24,86 @@ export default function ProductTimeChart({ data }: ProductTimeChartProps) {
   }, [])
 
   useEffect(() => {
-    if (!isClient || !chartRef.current || !data.length) return
+    if (!isClient || !chartRef.current || data.length === 0) return
 
     const ctx = chartRef.current.getContext("2d")
     if (!ctx) return
 
+    // 既存チャートの破棄
     if (chartInstanceRef.current) {
       try {
         chartInstanceRef.current.destroy()
       } catch (e) {
-        console.warn("チャートの破棄に失敗しました", e)
+        console.warn("チャート破棄エラー:", e)
       }
       chartInstanceRef.current = null
     }
 
-    const sortedData = [...data].sort((a, b) => b.averageTime - a.averageTime)
-    const topProducts = sortedData.slice(0, 10)
+    // データ整形：平均時間の大きい順トップ10
+    const sorted = [...data]
+      .sort((a, b) => b.averageTime - a.averageTime)
+      .slice(0, 10)
+    const labels = sorted.map((d) => d.name)
+    const avgTimes = sorted.map((d) => d.averageTime)
+    const totTimes = sorted.map((d) => d.totalTime)
 
-    const productNames = topProducts.map((item) => item.name)
-    const averageTimes = topProducts.map((item) => item.averageTime)
-    const totalTimes = topProducts.map((item) => item.totalTime)
-
-    try {
-      chartInstanceRef.current = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: productNames,
-          datasets: [
-            {
-              label: "平均作業時間(分/個)",
-              data: averageTimes,
-              backgroundColor: "rgba(99, 102, 241, 0.5)",
-              borderColor: "rgb(99, 102, 241)",
-              borderWidth: 1,
-              yAxisID: "y",
-            },
-            {
-              label: "総作業時間(分)",
-              data: totalTimes,
-              backgroundColor: "rgba(244, 114, 182, 0.5)",
-              borderColor: "rgb(244, 114, 182)",
-              borderWidth: 1,
-              type: "line",
-              yAxisID: "y1",
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          indexAxis: "y",
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: { display: true, text: "商品名" },
-            },
-            x: {
-              beginAtZero: true,
-              title: { display: true, text: "平均作業時間(分/個)" },
-            },
-            y1: {
-              beginAtZero: true,
-              position: "right",
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: "総作業時間(分)" },
-            },
+    // 新チャート生成
+    chartInstanceRef.current = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "平均作業時間(分/個)",
+            data: avgTimes,
+            backgroundColor: "rgba(99, 102, 241, 0.5)",
+            borderColor: "rgb(99, 102, 241)",
+            borderWidth: 1,
+            yAxisID: "y",
           },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (context) => {
-                  const value = context.raw as number
-                  return context.dataset.label === "平均作業時間(分/個)"
-                    ? `平均: ${value.toFixed(1)}分/個`
-                    : `総時間: ${value}分`
-                },
+          {
+            label: "総作業時間(分)",
+            data: totTimes,
+            type: "line",
+            backgroundColor: "rgba(244, 114, 182, 0.5)",
+            borderColor: "rgb(244, 114, 182)",
+            borderWidth: 1,
+            yAxisID: "y1",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: "商品名" } },
+          x: { beginAtZero: true, title: { display: true, text: "平均作業時間(分/個)" } },
+          y1: {
+            beginAtZero: true,
+            position: "right",
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: "総作業時間(分)" },
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.raw as number
+                return ctx.dataset.label === "平均作業時間(分/個)"
+                  ? `平均: ${v.toFixed(1)}分/個`
+                  : `総時間: ${v}分`
               },
             },
           },
         },
-      })
-    } catch (err) {
-      console.error("チャートの作成に失敗しました", err)
-    }
+      },
+    })
 
     return () => {
-      if (chartInstanceRef.current) {
-        try {
-          chartInstanceRef.current.destroy()
-        } catch (e) {
-          console.warn("クリーンアップ時のチャート破棄に失敗しました", e)
-        }
-        chartInstanceRef.current = null
-      }
+      chartInstanceRef.current?.destroy()
+      chartInstanceRef.current = null
     }
   }, [data, isClient])
 
